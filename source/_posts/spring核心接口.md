@@ -4,12 +4,14 @@ date: 2016-01-28 15:51:18
 tags: spring
 ---
 
-## spring比较重要的几个接口
-
 ### BeanFactory
 	最顶层的接口,也是最简单的接口,但是一般都不直接使用该接口,根据接口隔离原则,增加了很多子接口
 	用来扩展接口的功能,没个子接口都定义了一些符合接口名的功能,我们一般通过使用ApplicattonContex
 	来使用spring提供的功能.
+
+### BeanDefinition
+	spring ioc容器管理的实际是BeanDefinition,包含了class,name,autowire-mode,init-method
+	constructor arguments,property等属性这些属性让spring容器知道该如何创建bean,以及管理bean
 
 ### InitializingBean
 	当某个bean的属性被设置后,spring会调用实现了该接口的bean的afterPropertiesSet(), 用来完成一些
@@ -43,6 +45,11 @@ tags: spring
 	加载bean配置文件后,创建了一个bean definition, 但是里面的${name}还没有替换,然后
 	bean都加载完了,spring容器回调实现了该bean的实例来处理${name}
 
+### ApplicationContext
+	开发中一般都使用该接口,不但具有beanFactory的功能,还有resource,message...
+
+### Ordered
+	bean实例化优先级,值小的优先级高,值大得优先级低,控制bean实例化顺序时用到
 
 ## 小结
 	spring是一个对象容器,在加载,实例化时都提供了很多扩展方法,使用户代码可以参与到定制
