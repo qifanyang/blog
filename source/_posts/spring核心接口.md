@@ -60,8 +60,22 @@ tags: spring
 	更好的扩展性,比如当看到方法调用的时候还new className(args)之类的,一般这里都是接受
 	接口类型的参数,如果你需要加自定义操作就可以用自己的实现来调用,也许这就是作为一个通用
 	框架必须做的事情吧,需求太多...
-	
 
+	spring ioc容器提供对象管理,假如没有spring,当对象之间的依赖一般使用单例,或者手动new
+	或者使用service locator模式,但是这样都会对其它类产生耦合,使用spring 对象之间不知道
+	依赖的实例的存在,如果依赖的是接口,注入一个模拟对象,对于测试很方便
+	使用spring代码更加简洁和代码一致性,方便开发,而且和第三方结合的很好,提供方便的使用方式
+
+of the bean itself controlling the instantiation or location of
+its dependencies on its own by using direct construction of classes, or the Service Locator pattern.
+
+Code is cleaner with the DI principle and decoupling is more effective when objects are provided with
+their dependencies. The object does not look up its dependencies, and does not know the location
+or class of the dependencies. As such, your classes become easier to test, in particular when the
+dependencies are on interfaces or abstract base classes, which allow for stub or mock implementations
+to be used in unit tests.
+	
+	
 
 	
 
