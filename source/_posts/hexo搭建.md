@@ -1,5 +1,5 @@
 ---
-title: HEXO搭建
+title: HEXO-USE
 date: 2016-01-14 11:05:18
 tags: GIT
 ---

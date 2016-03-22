@@ -3,13 +3,9 @@ title: openJDK source code directory
 date: 2016-03-04 10:01:56
 tags: openJDK
 ---
-### 一级目录
+### 目录结构
 
-	share 各个平台共享的C代码,jni_md.h  md表示machine-dependent
-		native	类的本地方法C代码在这里,比如java/lang/Object.registerNatives()
-		classes	java源代码
-		javavm/export	一些头文件,jni.h,jvm.h,jvmti.h,jmm.h,classfile_constants.h...
-		instrument	工具目录,EncodingSupport.c,JavaExceptions.c,Utilities.c
+![](/img/OpenJDK目录.png)
 
 
 

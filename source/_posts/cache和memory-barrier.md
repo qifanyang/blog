@@ -152,7 +152,11 @@ memory bariier还可以细分为“write memory barrier(wmb)”和“read memory
 因为cpu和内存速度不匹配引入了cache, 因为多核会导致cache不一致,所以引入了cache一致性协议,又因为一致性协议效率问题引入了store buffer,因为store buffer的存在导致了可见性问题,所以引入了内存写栅栏,强制刷新store buffer,因为store buffer太小,满了之后需要等待invalidate ack来释放store buffer,为了让接受invalidate消息的core快速响应,然后引入了invalidate queue,收到invalidate消息后直接放入queue,但是core读取在本cache的变量,但是变量已经在invalidate queue中了,所以脏读了,所以引入读栅栏,强制先执行invalidate queue,使本cache中的变量invalidate,读取时从发出invalidate的那个core的cache读取
 
 # 在程序中使用内存栅栏
-java的volatile关键字实现了读栅栏和写栅栏,用该关键字声明变量时编译器对动态插入软件栅栏指令,在字节码中看不出来效果,在解释执行时执行栅栏
+java的volatile关键字实现了读栅栏和写栅栏,用该关键字声明变量时编译器对动态插入软件栅栏指令,在字节码中看不出来效果,但是synchronied和volatile实现JMM定义的语义,
+
+The Java Memory Model defines how threads interact through memory
+
+
 
 # 参考
 
