@@ -49,7 +49,6 @@ BeanDefinitionDocumentReader完成具体解析,
 BeanDefinitionParserDelegate实际完成具体解析,还会解析default-init-method等等,
 在解析过程中,可能会产生bean name重复等错误,所以需要提供错误反馈机制,包含错误消息,错位位置,方便定位,默认ProblemReporter实现是fail-fast抛出异常
 错误报告器抽象的原因是,当产生错误时可以采取不同的策略,可以是fail-fast,可以使记录日志,可以是忽略等等
-
 						BeanDefinition
 							|
 							|
@@ -69,13 +68,21 @@ parseQualifierElements(ele, bd);
 
 
 2.扫描包加载
+<context:component-scan base-package="com.test"> //会扫描指定的包名下的所有类,包含子目录下的类(通配符 **/*.class),使用类ClassPathBeanDefinitionScanner实现
+包扫描返回的bean difinition类是ScannedGenericBeanDefinition, 因为没有xml定义,需要知道类名字,是否抽象,父接口等需要信息,spring使用asm classReader来访问字节码
+使用了访问者模式获取类信息,遍历方法,字段等
+扫描包的时候,通过filter决定是否加载class为bean difinition, 默认会添加AnnotationTypeFilter(Component.class),当使用Controller注解也会加载,因为Controller注解使用了Componet作为元注解,还可以使用(javax.inject.Named),所以必须要使用Componet注解    
+扫描加载了所有bean difinition之后,读取@Scope,@ScopedProxyMode来配置,没有则采用默认配置,然后确定bean名字,默认类首字母小写
+然后设置beanDefinitionDefaults (在<beans ...> 中设置的default属性),在经历了和加载xml类似的过程之后,注册创建好的bean difinition到registry中,就完成了bean difinition扫描
+
 
 3.java编码配置
 
 
 
 
-## bean加载
+## bean实例化
+bean根据className或classType创建实例,并且需要解决依赖关系,2016-5-29分析下依赖如何解决...
 
 
 
