@@ -59,13 +59,18 @@ RootBeanDefinition GenericBeanDefinition ChildBeanDefinition
 根据bean xml创建bean definition, 默认是GenericBeanDefinition并设置beanClass或者className
 然后设置一些列bean definition属性
 parseMetaElements(ele, bd);
-parseLookupOverrideSubElements(ele, bd.getMethodOverrides());
+parseLookupOverrideSubElements(ele, bd.getMethodOverrides());//bean引用另外一个bean method, 但是另外的bean还没实例化,使用类似占位符方式
 parseReplacedMethodSubElements(ele, bd.getMethodOverrides());
 parseConstructorArgElements(ele, bd);
 parsePropertyElements(ele, bd);
 parseQualifierElements(ele, bd);
 然后注册bean difinition到 BeanDifinitionRegistry中, 实现类是DefaultListableBeanFactory, 用beanDefinitionMap存储
 
+bean名字:
+默认为id, 如果没有id则使用name(如果有多个name使用第一个,所以使用name和id效果一样),如果还没有name则使用默认名字生成策略
+<bean id="xyx" name="abc,def" .. />// name指定多个别名
+<alias name="xyx" alias="pqr"/>//很少使用,如果没法修改bean定义, 可以使用这种方式新加别名,spring提供了别名和raw name循环引用检查
+aliasMap key为alias name, value为raw name, 
 
 2.扫描包加载
 <context:component-scan base-package="com.test"> //会扫描指定的包名下的所有类,包含子目录下的类(通配符 **/*.class),使用类ClassPathBeanDefinitionScanner实现
@@ -77,12 +82,39 @@ parseQualifierElements(ele, bd);
 
 
 3.java编码配置
-
-
-
+spring boot 和 spring cloud使用该方式
 
 ## bean实例化
 bean根据className或classType创建实例,并且需要解决依赖关系,2016-5-29分析下依赖如何解决...
+实例化触发点:
+1.初始化spring container时,单例实例化
+2.beanFactory.getBean(...)获取bean时实例化
+
+提前初始化单例时,遍历已经加载的bean definition,如果是非抽象,非lazy-init的单例,就执行实例化,通过执行方法getBean(name)
+如果name以&开头(factoryBean),去掉&. 如果name是alias name,则需要获取raw name
+
+获取bean实例主要过程:
+1.doGetBean(name, requireType, args, typeCheckOnly)-->无论getBean(name),getBean(type),getBean(name,type)最终都会执行这里
+2.getSingleName(beanName)-->从缓存的singletonObjects查找
+3.if (isPrototypeCurrentlyInCreation(beanName)) {throw new BeanCurrentlyInCreationException(beanName);}-->只有在单例情况下
+才会尝试解决循环依赖,原型模式下有循环依赖直接抛出异常
+4.RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);-->将加载xml产生的GenericBeanDifition转换成RootBeanDifition
+因为xml定义的bean可能有父子关系,如果是子bean,则会合并父bean的相关属性,并使用子bean重写已经存在的属性,这里又有个递归向上查找
+5.String[] dependsOn = mbd.getDependsOn();-->检查循环依赖,如果没有循环依赖则实例化依赖的bean,<property name="a" ref="b"/>这种使用PropertValue保存
+6.mbd.isSingleton(),getSingleton(String, ObjectFactory<?>)-->创建单例,创建过程太复杂,默认通过mbd查找默认构造器创建实例,然后使用BeanWrapper包装,使用mbd初始化
+7.最复杂的是createBean(beanName, mbd, args)方法,doCreateBean()完成实例创建,BeanWrapper包装mbd中class创建的实例,如果实例是earlySingletonExposure
+则将该bean实例addSingletonFactory,this.singletonFactories.put(beanName, singletonFactory);这时候bean实例属性还没有填充.
+8.populateBean(beanName, mbd, instanceWrapper);-->填充bean属性,autowireByName(),根据mbd和bw获取bean中没有设置的属性,bw.getPropertyDescriptors()所有属性pd
+mbd.getPropertyValues();存在的属性值, 两者交集的补集就是需要注入的属性,然后根据属性调用getBean(name),又递归到第一步.如果有循环依赖,会使用ObjectFactory来创建对象(返回的对象是属性没填充的对象)
+不会使用createBean()方法(里面有populateBean()),
+
+## spring如何解决循环依赖
+A依赖B,B依赖A, 如何解决循环依赖,首先对于scope为prototype的bean,因为spring不会缓存这类bean的实例,所以无法解决循环依赖(创建时缓存了呢?)
+spring创建bean A单例实例,不会直接创建bean实例,而是使用ObjectFactory, 当A populateBean属性是实例化B, 而B的populateBean又需要A, 这时返回的A是通过
+ObjectFactory返回的,其属性没有被填充,但是可以用于设置B属性,  当A的依赖填充完毕后, B中引用的A也同时被填充完毕...
+
+
+
 
 
 
