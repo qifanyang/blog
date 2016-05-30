@@ -12,6 +12,7 @@ BeanDifinition定义对象的依赖,bean通过beanDifition来自己控制实例�
 ## Bean difinition Overview
 spring container manages bean defition, 可以通过xml定义,注解定义,java编码定义
 bean definition:
+
 	class-->bean实例化时创建的对象的类
 	name-->bean的名字,还可以有别名
 	scope-->bean实例化行为,主要关注单例(single)和非单例(prototype)
@@ -104,6 +105,7 @@ bean根据className或classType创建实例,并且需要解决依赖关系,2016-
 1.在spring加载了所有bean definition之后,提前初始化非抽象,非lazy-init的单例,实现是遍历已经加载的bean definition, 执行方法getBean(name), 和手动获取bean实例一致
 
 获取bean实例主要过程:
+
 	1.doGetBean(name, requireType, args, typeCheckOnly)-->无论getBean(name),getBean(type),getBean(name,type)最终都会执行这里
 	2.getSingleton(beanName)-->从缓存的singletonObjects查找,返回的可能是ObjectFactory创建的bean实例(属性没有被设置,在doCrateBean()方法中放入的),可能是FactoryBean
 	3.if (isPrototypeCurrentlyInCreation(beanName)) {throw new BeanCurrentlyInCreationException(beanName);}-->只有在单例情况下
