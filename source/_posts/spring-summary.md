@@ -12,15 +12,15 @@ BeanDifinition定义对象的依赖,bean通过beanDifition来自己控制实例�
 ## Bean difinition Overview
 spring container manages bean defition, 可以通过xml定义,注解定义,java编码定义
 bean definition:
-class-->bean实例化时创建的对象的类
-name-->bean的名字,还可以有别名
-scope-->bean实例化行为,主要关注单例(single)和非单例(prototype)
-constructor arguments-->bean实例化时传入的参数,注意循环依赖注入
-properties-->bean依赖的对象,spring container会注入
-autowiring mode-->自动装配依赖的属性,不适用构造参数和属性设置,而且新加入依赖也不用更改配置,效率高.通过名字或者类型向容器要依赖的对象
-lazy-initialization mode-->默认spring初始化容器后就会创建bean实例,lazy-init=true就不会实例化,当非lazy single依赖lazy的bean,会实例化lazy bean依赖的对象
-initialization method-->spring bean声明周期,创建bean后调用指定方法完成初始化(C),初始化还可以通过@PostConstructor(A),InitializingBean(B)等
-destruction method-->类似initialization method, 容器写在bean时完成清理工作
+	class-->bean实例化时创建的对象的类
+	name-->bean的名字,还可以有别名
+	scope-->bean实例化行为,主要关注单例(single)和非单例(prototype)
+	constructor arguments-->bean实例化时传入的参数,注意循环依赖注入
+	properties-->bean依赖的对象,spring container会注入
+	autowiring mode-->自动装配依赖的属性,不适用构造参数和属性设置,而且新加入依赖也不用更改配置,效率高.通过名字或者类型向容器要依赖的对象
+	lazy-initialization mode-->默认spring初始化容器后就会创建bean实例,lazy-init=true就不会实例化,当非lazy single依赖lazy的bean,会实例化lazy bean依赖的对象
+	initialization method-->spring bean声明周期,创建bean后调用指定方法完成初始化(C),初始化还可以通过@PostConstructor(A),InitializingBean(B)等
+	destruction method-->类似initialization method, 容器写在bean时完成清理工作
 
 ## spring container 初始化过程
 AbstractApplicationContext.refresh()完成spring初始化
@@ -84,34 +84,46 @@ aliasMap key为alias name, value为raw name,
 3.java编码配置
 spring boot 和 spring cloud使用该方式
 
+## spring内部存放bean实例
+	1.DefaultSingletonBeanRegistry.singletonObjects-->单例对象map,Cache of singleton objects: bean name --> bean instance
+	2.DefaultSingletonBeanRegistry.singletonFactories-->提前曝光单例,但是单例属性还未设置完毕,Cache of singleton factories: bean name --> ObjectFactory
+	3.DefaultSingletonBeanRegistry.earlySingletonObjects-->ObjectFactory创建的对象,属性还未设置,Cache of early singleton objects: bean name --> bean instance
+	4.DefaultSingletonBeanRegistry.registeredSingletons-->Set of registered singletons, containing the bean names in registration order
+
+其中2和3互斥,意思就是如果bean实例在2中,3中就不包含. 在3中就不在2中, 在[bean实例化](#bean实例化)过程会创建对象放入上面的数据结构中
+
 ## bean实例化
 bean根据className或classType创建实例,并且需要解决依赖关系,2016-5-29分析下依赖如何解决...
 实例化触发点:
-1.初始化spring container时,单例实例化
-2.beanFactory.getBean(...)获取bean时实例化
+	1.初始化spring container时,单例实例化
+	2.beanFactory.getBean(...)获取bean时实例化,实例化时有依赖自动调用getBean(name)
 
 提前初始化单例时,遍历已经加载的bean definition,如果是非抽象,非lazy-init的单例,就执行实例化,通过执行方法getBean(name)
 如果name以&开头(factoryBean),去掉&. 如果name是alias name,则需要获取raw name
 
+1.在spring加载了所有bean definition之后,提前初始化非抽象,非lazy-init的单例,实现是遍历已经加载的bean definition, 执行方法getBean(name), 和手动获取bean实例一致
+
 获取bean实例主要过程:
-1.doGetBean(name, requireType, args, typeCheckOnly)-->无论getBean(name),getBean(type),getBean(name,type)最终都会执行这里
-2.getSingleName(beanName)-->从缓存的singletonObjects查找
-3.if (isPrototypeCurrentlyInCreation(beanName)) {throw new BeanCurrentlyInCreationException(beanName);}-->只有在单例情况下
-才会尝试解决循环依赖,原型模式下有循环依赖直接抛出异常
-4.RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);-->将加载xml产生的GenericBeanDifition转换成RootBeanDifition
-因为xml定义的bean可能有父子关系,如果是子bean,则会合并父bean的相关属性,并使用子bean重写已经存在的属性,这里又有个递归向上查找
-5.String[] dependsOn = mbd.getDependsOn();-->检查循环依赖,如果没有循环依赖则实例化依赖的bean,<property name="a" ref="b"/>这种使用PropertValue保存
-6.mbd.isSingleton(),getSingleton(String, ObjectFactory<?>)-->创建单例,创建过程太复杂,默认通过mbd查找默认构造器创建实例,然后使用BeanWrapper包装,使用mbd初始化
-7.最复杂的是createBean(beanName, mbd, args)方法,doCreateBean()完成实例创建,BeanWrapper包装mbd中class创建的实例,如果实例是earlySingletonExposure
-则将该bean实例addSingletonFactory,this.singletonFactories.put(beanName, singletonFactory);这时候bean实例属性还没有填充.
-8.populateBean(beanName, mbd, instanceWrapper);-->填充bean属性,autowireByName(),根据mbd和bw获取bean中没有设置的属性,bw.getPropertyDescriptors()所有属性pd
-mbd.getPropertyValues();存在的属性值, 两者交集的补集就是需要注入的属性,然后根据属性调用getBean(name),又递归到第一步.如果有循环依赖,会使用ObjectFactory来创建对象(返回的对象是属性没填充的对象)
-不会使用createBean()方法(里面有populateBean()),
+	1.doGetBean(name, requireType, args, typeCheckOnly)-->无论getBean(name),getBean(type),getBean(name,type)最终都会执行这里
+	2.getSingleton(beanName)-->从缓存的singletonObjects查找,返回的可能是ObjectFactory创建的bean实例(属性没有被设置,在doCrateBean()方法中放入的),可能是FactoryBean
+	3.if (isPrototypeCurrentlyInCreation(beanName)) {throw new BeanCurrentlyInCreationException(beanName);}-->只有在单例情况下
+	才会尝试解决循环依赖,原型模式下有循环依赖直接抛出异常
+	4.RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);-->将加载xml产生的GenericBeanDifition转换成RootBeanDifition
+	因为xml定义的bean可能有父子关系,如果是子bean,则会合并父bean的相关属性,并使用子bean重写已经存在的属性,这里又有个递归向上查找
+	5.String[] dependsOn = mbd.getDependsOn();-->检查循环依赖,如果没有循环依赖则实例化依赖的bean,<property name="a" ref="b"/>这种使用PropertValue保存
+	6.mbd.isSingleton(),getSingleton(String, ObjectFactory<?>)-->创建单例,创建过程太复杂,默认通过mbd查找默认构造器创建实例,然后使用BeanWrapper包装,使用mbd初始化
+	7.最复杂的是createBean(beanName, mbd, args)方法,doCreateBean()完成实例创建,BeanWrapper包装mbd中class创建的实例,如果实例是earlySingletonExposure
+	则将该bean实例addSingletonFactory,this.singletonFactories.put(beanName, singletonFactory);这时候bean实例属性还没有填充.
+	8.populateBean(beanName, mbd, instanceWrapper);-->填充bean属性,autowireByName(),根据mbd和bw获取bean中没有设置的属性,bw.getPropertyDescriptors()所有属性pd
+	mbd.getPropertyValues();存在的属性值, 两者交集的补集就是需要注入的属性,然后根据属性调用getBean(name),又递归到第一步.如果有循环依赖,会使用ObjectFactory来创建对象(返回的对象是属性没填充的对象)
+	不会使用createBean()方法(里面有populateBean()),
 
 ## spring如何解决循环依赖
 A依赖B,B依赖A, 如何解决循环依赖,首先对于scope为prototype的bean,因为spring不会缓存这类bean的实例,所以无法解决循环依赖(创建时缓存了呢?)
-spring创建bean A单例实例,不会直接创建bean实例,而是使用ObjectFactory, 当A populateBean属性是实例化B, 而B的populateBean又需要A, 这时返回的A是通过
+用一次创建A和B为例子,spring创建bean A单例实例,不会直接创建bean实例,而是创建ObjectFactory,在需要访问bean A时,使用回调返回bean A(这里的bean A属性没有填充完毕), 当A populateBean属性是实例化B, 而B的populateBean又需要A, 这时返回的A是通过
 ObjectFactory返回的,其属性没有被填充,但是可以用于设置B属性,  当A的依赖填充完毕后, B中引用的A也同时被填充完毕...
+
+
 
 
 
