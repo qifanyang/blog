@@ -115,7 +115,8 @@ bean根据className或classType创建实例,并且需要解决依赖关系,2016-
 	5.String[] dependsOn = mbd.getDependsOn();-->检查循环依赖,如果没有循环依赖则实例化依赖的bean,<property name="a" ref="b"/>这种使用PropertValue保存
 	6.mbd.isSingleton(),getSingleton(String, ObjectFactory<?>)-->创建单例,创建过程太复杂,默认通过mbd查找默认构造器创建实例,然后使用BeanWrapper包装,使用mbd初始化
 	7.最复杂的是createBean(beanName, mbd, args)方法,doCreateBean()完成实例创建,BeanWrapper包装mbd中class创建的实例,如果实例是earlySingletonExposure
-	则将该bean实例addSingletonFactory,this.singletonFactories.put(beanName, singletonFactory);这时候bean实例属性还没有填充.
+	则将该bean实例addSingletonFactory,this.singletonFactories.put(beanName, singletonFactory);这时候bean实例属性还没有填充.如果使用了AOP(<aop:aspectj-autoproxy>)(AnnotationAwareAspectJAutoProxyCreator)
+	则调用InstantiationAwareBeanPostProcessorc,如果直接创建了代理对象则直接返回实例对象
 	8.populateBean(beanName, mbd, instanceWrapper);-->填充bean属性,autowireByName(),根据mbd和bw获取bean中没有设置的属性,bw.getPropertyDescriptors()所有属性pd
 	mbd.getPropertyValues();存在的属性值, 两者交集的补集就是需要注入的属性,然后根据属性调用getBean(name),又递归到第一步.如果有循环依赖,会使用ObjectFactory来创建对象(返回的对象是属性没填充的对象)
 	不会使用createBean()方法(里面有populateBean()),
@@ -126,10 +127,43 @@ A依赖B,B依赖A, 如何解决循环依赖,首先对于scope为prototype的bean
 ObjectFactory返回的,其属性没有被填充,但是可以用于设置B属性,  当A的依赖填充完毕后, B中引用的A也同时被填充完毕...
 
 
+## spring AOP
+1.使用@Aspectj
+
+	使用该注解,会注册AnnotationAwareAspectJAutoProxyCreator.class到容器中,改类是一个InstanstionAwareBeeanPostProcessor,在每次从容器获取bean实例时,会
+	自动调用该BeanPostProcessor创建代理类,
+
+static {
+		APC_PRIORITY_LIST.add(InfrastructureAdvisorAutoProxyCreator.class);
+		APC_PRIORITY_LIST.add(AspectJAwareAdvisorAutoProxyCreator.class);
+		APC_PRIORITY_LIST.add(AnnotationAwareAspectJAutoProxyCreator.class);	
+		}
+三个自动代理创建器,list索引代表了优先级,spring容器中只能注册一个,重复注册优先级高的会替换优先级低的
+AnnotationAwareAspectJAutoProxyCreator是一个BeanPostProcessor,在从spring容器获取实例对象时,会检查容器中使用@Aspectj注解的bean, 然后创建一个Advisor.
+*AutoProxyCreator有个抽象方法getAdvicesAndAdvisorsForBean(Class<?> beanClass, String beanName, TargetSource customTargetSource)用于查找beanClass是否被代理,
+被代理的话返回advice或者advisor. 其内部实现是先查找容器中所有Advisor,然后遍历advisor并使用pointcut验证beanclass是否可以被代理,可以被代理的话加入返回列表中,只要被代理
+class有一个方法匹配都应该返回, 实际方法调用的时候还要再次验证目标方式是否可以被拦截
+
+
+2.使用<aop:config>
+除了使用@Aspectj注解之外,还可以使用<aop:config>,标签解析时spring注册AspectJAwareAdvisorAutoProxyCreator.class, 不过如果使用了@Aspectj标签的话会使用AnnotationAwareAspectJAutoProxyCreator
+替代,不会使用AspectJAwareAdvisorAutoProxyCreator, 因为AnnotationAwareAspectJAutoProxyCreator是AspectJAwareAdvisorAutoProxyCreator的子类,查找advisor时会把使用@Aspectj注解的类作为advisor返回
+
+
+例如下面添加一个advistor, 解析时会向容器中注册advisor, pointcut,aspectj
+  <aop:config proxy-target-class="true"> //代理目标类,意思就是使用Cglib创建代理类,不适用JDK对接口创建的动态代理
+        <aop:advisor advice-ref="transactionMethodInterceptor" //拦截器也是一个Advice
+                     pointcut-ref="transactionMethodInterceptorPointcut"/>//指定pointcut,符合拦截规则将使用advice-ref执行的advice
+ </aop:config>
+ 
+拦截器有多种类型,Advisor,MethodInterceptor,Advice  但是最终都会包装成Advisor
+
+使用事务注解@Transaction来使用事务,相对于<aop:config>配置事务来说没增加多少配置,但是控制粒度更加细也方便修改
+<tx:annotation-driven transaction-manager="transactionManager" order="2"/>
 
 
 
 
 
 
-
+## spring依赖属性注入是调用set方法(Bean WriteMethod),如果在Bean difinition的property map中包含属性键值对,即使没有对应属性名字也会调用set方法
