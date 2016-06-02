@@ -94,10 +94,9 @@ spring boot 和 spring cloud使用该方式
 其中2和3互斥,意思就是如果bean实例在2中,3中就不包含. 在3中就不在2中, 在[bean实例化](#bean实例化)过程会创建对象放入上面的数据结构中
 
 ## bean实例化
-bean根据className或classType创建实例,并且需要解决依赖关系,2016-5-29分析下依赖如何解决...
 实例化触发点:
-	1.初始化spring container时,单例实例化
-	2.beanFactory.getBean(...)获取bean时实例化,实例化时有依赖自动调用getBean(name)
+	1.初始化spring container时,单例提前实例化
+	2.beanFactory.getBean(...)获取bean时实例化,实例化单例时有依赖自动调用getBean(name)
 
 提前初始化单例时,遍历已经加载的bean definition,如果是非抽象,非lazy-init的单例,就执行实例化,通过执行方法getBean(name)
 如果name以&开头(factoryBean),去掉&. 如果name是alias name,则需要获取raw name
@@ -134,10 +133,10 @@ ObjectFactory返回的,其属性没有被填充,但是可以用于设置B属性,
 	自动调用该BeanPostProcessor创建代理类,
 
 static {
-		APC_PRIORITY_LIST.add(InfrastructureAdvisorAutoProxyCreator.class);
-		APC_PRIORITY_LIST.add(AspectJAwareAdvisorAutoProxyCreator.class);
-		APC_PRIORITY_LIST.add(AnnotationAwareAspectJAutoProxyCreator.class);	
-		}
+		APC_PRIORITY_LIST.add(InfrastructureAdvisorAutoProxyCreator.class);//使用<tx:annotation-driven>会注入
+		APC_PRIORITY_LIST.add(AspectJAwareAdvisorAutoProxyCreator.class);//使用<aop:config>会注入
+		APC_PRIORITY_LIST.add(AnnotationAwareAspectJAutoProxyCreator.class);//使用<aop:aspectj-autoproxy>会注入
+	}
 三个自动代理创建器,list索引代表了优先级,spring容器中只能注册一个,重复注册优先级高的会替换优先级低的
 AnnotationAwareAspectJAutoProxyCreator是一个BeanPostProcessor,在从spring容器获取实例对象时,会检查容器中使用@Aspectj注解的bean, 然后创建一个Advisor.
 *AutoProxyCreator有个抽象方法getAdvicesAndAdvisorsForBean(Class<?> beanClass, String beanName, TargetSource customTargetSource)用于查找beanClass是否被代理,
@@ -147,8 +146,7 @@ class有一个方法匹配都应该返回, 实际方法调用的时候还要再�
 
 2.使用<aop:config>
 除了使用@Aspectj注解之外,还可以使用<aop:config>,标签解析时spring注册AspectJAwareAdvisorAutoProxyCreator.class, 不过如果使用了@Aspectj标签的话会使用AnnotationAwareAspectJAutoProxyCreator
-替代,不会使用AspectJAwareAdvisorAutoProxyCreator, 因为AnnotationAwareAspectJAutoProxyCreator是AspectJAwareAdvisorAutoProxyCreator的子类,查找advisor时会把使用@Aspectj注解的类作为advisor返回
-
+替代,不会使用AspectJAwareAdvisorAutoProxyCreator, 因为AnnotationAwareAspectJAutoProxyCreator是AspectJAwareAdvisorAutoProxyCreator的子类,查找advisor时会查找把使用@Aspectj注解的类作为advisor返回
 
 例如下面添加一个advistor, 解析时会向容器中注册advisor, pointcut,aspectj
   <aop:config proxy-target-class="true"> //代理目标类,意思就是使用Cglib创建代理类,不适用JDK对接口创建的动态代理
@@ -158,8 +156,65 @@ class有一个方法匹配都应该返回, 实际方法调用的时候还要再�
  
 拦截器有多种类型,Advisor,MethodInterceptor,Advice  但是最终都会包装成Advisor
 
-使用事务注解@Transaction来使用事务,相对于<aop:config>配置事务来说没增加多少配置,但是控制粒度更加细也方便修改
+
+## spring声明式事务配置
+1.使用TransactionProxyFactoryBean来代理dao bean
+
+2.使用拦截器TransactionInterceptor, 将手动使用TransanctionTemplate的方式自动化,控制粒度比较粗,可以使用<aop:config>将该拦截器用于service,也可以使用BeanNameAutoProxyCreator
+<bean id="transactionInterceptor" class="org.springframework.transaction.interceptor.TransactionInterceptor">
+        <property name="transactionManager" ref="transactionManager" />
+        <!-- 配置事务属性 -->
+        <property name="transactionAttributes">
+            <props>
+                <prop key="*">PROPAGATION_REQUIRED</prop>
+            </props>
+        </property>
+    </bean>
+
+3.使用tx标签配置的拦截器,和使用事务拦截器效果差不多,内部实现也是使用TransactionInterceptor作为advice实现,见TxAdviceBeanDefinitionParser.getBeanClass()
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+        <tx:attributes>
+            <tx:method name="*" propagation="REQUIRED" />
+        </tx:attributes>
+    </tx:advice>
+
+    <aop:config>
+        <aop:pointcut id="interceptorPointCuts" expression="execution(* com.bluesky.spring.dao.*.*(..))" />
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="interceptorPointCuts" />
+    </aop:config>
+
+4.使用事务注解@Transaction来使用事务,相对于<aop:config>配置事务来说没增加多少配置,但是控制粒度更细
 <tx:annotation-driven transaction-manager="transactionManager" order="2"/>
+AnnotationDrivenBeanDefinitionParser也是使用TransactionInterceptor作为advice,BeanFactoryTransactionAttributeSourceAdvisor作为advisor,默认使用InfrastructureAdvisorAutoProxyCreator作为自动代理创建器,具体使用哪个
+AutoProxyCreator主要还是在于使用了哪些AOP方式,遵循AopConfigUtils中的APC_PRIORITY_LIST列表. 关于事务属性设置RuleBasedTransactionAttribute,在方法调用的时候去解析事务属性
+
+
+## spring事务管理
+分为编程式事务(类似JDBC事务)和声明式事务
+
+### 编程式事务
+1.jdbc事务-->1.设置不自动提交事务setAutoCommit(false)  2.执行sql 3.commit()有异常则rollBack()
+2.hibernate事务-->1.beginTransaction() 2.执行sql 3.提交或者回滚  和jdbc类似, 只是用方法封装多做了框架相关的工作
+3.spring编程式事务-->使用模板方法将开启事务,提交事务和回滚事务提取出来, 用户代码在回调中执行sql操作. TransanctionTemplate.execute(...)
+
+在spring中使用编程式事务使用的对象:
+1.TransactionDefinition(默认实现DefaultTransanctionDefinition),包含了事务隔离性,传播特性(如果在开始当前事务之前，一个事务上下文已经存在),是否只读,超时时间等事务相关的属性
+2.PlatformTransactionManager(有多种实现,DataSourceTransactionManager,JtaTransactionManager)等
+3.TransactionStatus代表事务状态对象(包含事务对象,挂起的事务等),使用该对象执行事务相关操作,提交,回滚,挂起以及事务状态查询
+
+编程式事务使用方式,先创建事务定义(可以使用默认),然后从事务管理器中获取一个事务对象,然后使用该事务对象进行数据库操作
+需要解决的问题:
+1.创建数据库连接,设置事务属性-->这个简单,获取数据库连接,根据TransactionDefinition设置即可,spring还进行了包装ConnectionHolder->DataSourceTransactionObject->
+2.事务传播行为-->业务逻辑中数据库操作都放在方法当中,一般不可能在一个方法当中修改事务传播行为,所以已方法为单位来应用传播行为.当处理一个请求时,服务器可能会有一个或者多个方法调用,形成一个方法栈链.在这一次请求中
+需要一个事务上下文环境,ThreadLocal用来存储. 当每方法调用时就会查看当前事务上下文事务已经有事务存在,然后根据传播行为来决定是否新建事务,加入事务还是挂起事务. 当然执行事务的前提是该类和改方法进行了事务增强
+
+
+
+
+
+
+### 声明式事务
+
 
 
 
