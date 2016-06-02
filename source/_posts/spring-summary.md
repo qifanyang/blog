@@ -208,12 +208,15 @@ AutoProxyCreator主要还是在于使用了哪些AOP方式,遵循AopConfigUtils�
 2.事务传播行为-->业务逻辑中数据库操作都放在方法当中,一般不可能在一个方法当中修改事务传播行为,所以已方法为单位来应用传播行为.当处理一个请求时,服务器可能会有一个或者多个方法调用,形成一个方法栈链.在这一次请求中
 需要一个事务上下文环境,ThreadLocal用来存储. 当每方法调用时就会查看当前事务上下文事务已经有事务存在,然后根据传播行为来决定是否新建事务,加入事务还是挂起事务. 当然执行事务的前提是该类和改方法进行了事务增强
 
+3.为什么用DataSource作为ThreadLocal的key,因为JDBCTemplate执行sql,需要获取数据库连接(自然需要注入DataSource),如果创建事务和执行sql的datasource都应该是同一个,在单个jvm中这个值是唯一的,所以用来作为ThreadLocal的key比较合理,如果不采用该值
+那么在存储线程上下文到ThreadLocal时需要确定一个key, 而且要保证spring jdbc template代码中能够拿到存储在事务上下文中的数据库连接,如果使用一个常量字符串作为key,就需要一个全局常量也可以满足, 如果有两个数据库那么使用字符串就行不通了.
 
 
 
 
 
 ### 声明式事务
+事务方法调用,增强都会用到TransactionInterceptpr,这是一个MethodInterceptor,调用事务方法都会执行改拦截器,执行和TransactionTemplate差不多的事务逻辑
 
 
 
