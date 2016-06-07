@@ -144,7 +144,7 @@ ObjectFactory返回的,其属性没有被填充,但是可以用于设置B属性,
 
 static {
 		APC_PRIORITY_LIST.add(InfrastructureAdvisorAutoProxyCreator.class);//使用<tx:annotation-driven>会注入
-		APC_PRIORITY_LIST.add(AspectJAwareAdvisorAutoProxyCreator.class);//使用<aop:config>会注入
+		APC_PRIORITY_LIST.add(AspectJAwareAdvisorAutoProxyCreator.class);//使用<aop:config>会注入 <tx:advice>
 		APC_PRIORITY_LIST.add(AnnotationAwareAspectJAutoProxyCreator.class);//使用<aop:aspectj-autoproxy>会注入
 	}
 三个自动代理创建器,list索引代表了优先级,spring容器中只能注册一个,重复注册优先级高的会替换优先级低的
@@ -196,7 +196,10 @@ class有一个方法匹配都应该返回, 实际方法调用的时候还要再�
 4.使用事务注解@Transaction来使用事务,相对于<aop:config>配置事务来说没增加多少配置,但是控制粒度更细
 <tx:annotation-driven transaction-manager="transactionManager" order="2"/>
 AnnotationDrivenBeanDefinitionParser也是使用TransactionInterceptor作为advice,BeanFactoryTransactionAttributeSourceAdvisor作为advisor,默认使用InfrastructureAdvisorAutoProxyCreator作为自动代理创建器,具体使用哪个
-AutoProxyCreator主要还是在于使用了哪些AOP方式,遵循AopConfigUtils中的APC_PRIORITY_LIST列表. 关于事务属性设置RuleBasedTransactionAttribute,在方法调用的时候去解析事务属性
+AutoProxyCreator主要还是在于使用了哪些AOP方式,遵循AopConfigUtils中的APC_PRIORITY_LIST列表. BeanFactoryTransactionAttributeSourceAdvisor是一个advisor,使用了TransactionAttributeSourcePointcut作为pointcut,实例化bean时会调用该pointcut来执行匹配,
+如果方法上或者类上使用了@Transactional注解,就说明match成功,说明该类可以用于事务增强,并创建RuleBasedTransactionAttribute作为事务属性实例(方法调用时使用),使用class+method作为key缓存在transactionAttributeSource中,当方法调用时,transactionInterceptor
+会根据class+method去查找执行匹配时创建的事务属性来执行事务
+
 
 
 ## spring事务管理
