@@ -43,7 +43,17 @@ AbstractApplicationContext.refresh()完成spring初始化
 到此为止,spring初始化完毕,其中1和10内部进行的工作最多
 
 ## bean difiniiton解析
-1.从xml加载
+1.创建DefaultListableBeanFactory实例,作为BeanFactory默认实现,为加载bean definition做准备
+2.创建XmlBeanDefinitionReader(持有bean factory引用,用于bean注册, 因为该reader只具备注册bean definition功能,所以只可以持有BeanDefinitionRegistry引用, 不应该持有BeanFactory引用,好的设计),,开始解析配置的配置文件路径 application.xml
+3.创建BeanDefinitionDocumentReader(只有XmlBeanDefinitonReader引用,用于访问bean factory等)开始解析, 创建上下文(XmlReaderContext,自定义bean definiiton parser必要参数,包含namespcehander,BeanReader)
+4.BeanDefinitionDocumentReader开始解析xml信息,委托代理BeanDefinitionParserDelegate解析并返回bean definition
+5.BeanDefinitionParserDelegate代理解析详细xml配置,创建GenericBeanDefinition实例并配置其属性并返回
+6.BeanDefinitionReaderUtils.registerBeanDefinition(bdHolder, getReaderContext().getRegistry()) 注册bean定义
+7.上面是解析默认标签(Beans下,bean, import,alias等),解析自定义标签,需要根据标签名从readcontext的namespaceHandlerResover中获取对应的NamespaceHandler,这里可以扩展自己的bean 定义解析器
+8.hander.parse(Element,ParserContext),开始解析元素,ParserContext包含了readerContext(同解析默认标签,可以间接访问BeanFactory),实际的BeanDefinitionParser
+
+
+从xml加载类似下面这种xml定义
 <bean id="name" class="com.user" scope="prototype" ...> //同bean definition
 XmlBeanDefinitionReader解析xml配置创建bean difinition并注册, AbstractBeanDefinitionReader主要包含 BeanDifinitionRegistry,resourceLoader
 BeanDefinitionDocumentReader完成具体解析,
@@ -204,14 +214,12 @@ AutoProxyCreator主要还是在于使用了哪些AOP方式,遵循AopConfigUtils�
 
 编程式事务使用方式,先创建事务定义(可以使用默认),然后从事务管理器中获取一个事务对象,然后使用该事务对象进行数据库操作
 需要解决的问题:
-1.创建数据库连接,设置事务属性-->这个简单,获取数据库连接,根据TransactionDefinition设置即可,spring还进行了包装ConnectionHolder->DataSourceTransactionObject->
+1.创建数据库连接,设置事务属性-->这个简单,获取数据库连接,根据TransactionDefinition设置即可,spring还进行了包装ConnectionHolder->DataSourceTransactionObject->TransactionStatus
 2.事务传播行为-->业务逻辑中数据库操作都放在方法当中,一般不可能在一个方法当中修改事务传播行为,所以已方法为单位来应用传播行为.当处理一个请求时,服务器可能会有一个或者多个方法调用,形成一个方法栈链.在这一次请求中
 需要一个事务上下文环境,ThreadLocal用来存储. 当每方法调用时就会查看当前事务上下文事务已经有事务存在,然后根据传播行为来决定是否新建事务,加入事务还是挂起事务. 当然执行事务的前提是该类和改方法进行了事务增强
 
-3.为什么用DataSource作为ThreadLocal的key,因为JDBCTemplate执行sql,需要获取数据库连接(自然需要注入DataSource),如果创建事务和执行sql的datasource都应该是同一个,在单个jvm中这个值是唯一的,所以用来作为ThreadLocal的key比较合理,如果不采用该值
-那么在存储线程上下文到ThreadLocal时需要确定一个key, 而且要保证spring jdbc template代码中能够拿到存储在事务上下文中的数据库连接,如果使用一个常量字符串作为key,就需要一个全局常量也可以满足, 如果有两个数据库那么使用字符串就行不通了.
-
-
+3.为什么用DataSource作为ThreadLocal的key,因为JDBCTemplate执行sql,需要获取数据库连接(自然需要注入DataSource),创建事务和执行sql的datasource都应该是同一个,在单个jvm中这个值是唯一的,所以用来作为ThreadLocal的key比较合理,如果不采用该值
+那么在存储线程上下文到ThreadLocal时需要确定一个key, 而且要保证spring jdbc template代码中能够拿到存储在事务上下文中的数据库连接(或者没有使用事务就直接从数据源获取数据库连接),如果使用一个常量字符串作为key,就需要一个全局常量也可以满足, 如果有两个数据库那么使用字符串就行不通了.
 
 
 
@@ -219,9 +227,27 @@ AutoProxyCreator主要还是在于使用了哪些AOP方式,遵循AopConfigUtils�
 事务方法调用,增强都会用到TransactionInterceptpr,这是一个MethodInterceptor,调用事务方法都会执行改拦截器,执行和TransactionTemplate差不多的事务逻辑
 
 
-
-
-
-
-
 ## spring依赖属性注入是调用set方法(Bean WriteMethod),如果在Bean difinition的property map中包含属性键值对,即使没有对应属性名字也会调用set方法
+
+## spring扩展
+1.自定义标签解析,添加BeanDefinitionParser,NamespaceHandler,xsd, spring.handlers, spring.schemas文件
+解析时用的对象:
+ReaderContext-->上下文
+	|
+	XmlBeanDefinitionReader-->包含BeanDefinitionRegistry,namespaceHandlerResolver
+	|
+	NamespaceHandlerResolver-->获取标签对应的parser
+
+
+
+
+2.注册对象(将对象放入singletonObjects map中)或注册bean definition(将定义放入Beandefinition map中)
+3.AutoProxyCreator实现
+
+
+## Autowired
+最常用的Autowired,可以作用于字段,方法, 使用AutowiredAnnotationBeanPostProcessor处理,从bean factory中去寻找指定类型的依赖,如果该类型有多个实例,在依赖的实例上使用@Primary,表明注入这个实例
+也可以使用@Autowired @Qualifier明确指出依赖注入哪一个
+
+
+
