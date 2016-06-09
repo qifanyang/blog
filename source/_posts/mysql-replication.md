@@ -6,7 +6,7 @@ show binary logs; 查看二进制日志
 show variables like 'datadir%'; 查看数据目录,不然要从配置文件中查看
 show variables like 'log_bin%'; 查看二进制日志配置
 
-## 主备配置
+## 主备配置(主备都没有数据)
 1.在主库和备库上创建帐号
 GRANT replication SLAVE , replication client ON *.* TO repl@'192.168.2.%' IDENTIFIED by '123456';
 GRANT replication SLAVE , replication client ON *.* TO repl@'192.168.2.%' IDENTIFIED by '123456' WITH GRANT OPTION;
@@ -32,6 +32,26 @@ replicate_do_db=test //从库只同步指定的数据库数据
 change master to master_host='192.168.2.103',master_user='repl',master_password='123456',master_log_file='mysql-bin.000001',master_log_pos=0;
 start slave;
 stop slave;
+
+## 主备配置(主库有数据,备库没有数据)
+1.主库执行FLUSH TABLES WITH READ LOCK,阻止innodb提交数据(要保持session,断开的话会释放锁)
+
+2.记录主库二进制日志文件名和在二进制日志中的偏移量(slave同步时从该位置开始读取)
+
+3.继续持有所,阻止数据备改变,然后备份数据
+3.1 使用innodb的话,建议是用mysqldump, 还可以通过拷贝数据文件,但是手册中建议innodb不这么做,我们一般都是用innodb,所以还是采用mysqldump
+
+4.数据快照已经拿到,同步的二进制日志文件名和位置也已经拿到,释放主库读锁, unlock tables
+
+5.mysql -h master < fulldb.dump 将数据导入slave中
+
+6.告诉备库如何从主库重放其二进制日志
+change master to master_host='192.168.2.103',master_user='repl',master_password='123456',master_log_file='mysql-bin.000001',master_log_pos=0;
+start slave;
+
+
+
+
 
 
 		 
