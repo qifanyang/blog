@@ -30,21 +30,20 @@ spring mvc基于servlet,所以需要在web.xml中配置,servlet 3.0支持使用�
 
 ### 加载spring配置文件
 ContextLodaerListener完成spring容器初始化,使用XmlWebApplicationContext作为bean factory,<context-param></context-param>指定配置文件位置,加载bean定义,并绑定到servletContex上下文中,
-这里加载的context在有层级关系的bean factory中作为rootContext. 这里主要加载应用程序逻辑业务bean
+这里加载的context作为mvc容器bean factory的rootContext. 主要加载应用程序逻辑业务bean,包含service,dao等,稍后加载的controller会使用这里加载的bean
 
 ### 初始化DispatcherServlet
-初始化servlet分发器,执行servlet.init()方法使用web.xml配置初始化servlet,默认加载servletName+servlet.xml作为配置文件名字,contextLoaderListener已经创建好了webApplicationContext,使用已经
-创建好的applicationContext作为父容器创建新的applicationContext. 所有的servlet对应的容器共享contextLoaderListener创建的容器.可以在server设置配置文件名字,如果没有设置名字默认采用servletname+"-servlet.xml"
-作为spring配置文件(钩子方法,重写getLocations()实现),
+初始化servlet分发器,执行servlet.init()方法使用web.xml配置初始化servlet,默认加载servletName+servlet.xml作为配置文件名字或者servlet参数配置的文件名,contextLoaderListener已经创建好了webApplicationContext,
+使用已经创建好的applicationContext作为父容器创建新的applicationContext. 所有的servlet对应的容器共享contextLoaderListener创建的容器.默认配置文件名采用钩子方法,重写getLocations()实现,如果没有指定mvc配置文件则采用默认文件名字,
 
 servlet加载完spring-servlet.xml配置文件后,开始初始化spring-mvc
 http://www.springframework.org/schema/mvc
 http://www.springframework.org/schema/mvc/spring-mvc.xsd
 
-## spring-mvc主要组件
+## spring-mvc主要组件,主要采用spring标签扩展机制实现
 ### HandlerMapping
 处理请求映射,收到http请求,根据请求去查找对应的Handler,实现有:
-1.RequestMappingHandlerMapping(<mvc:annotation-driven>解析器注册,用于@Controller,@RequestMapping,会遍历所有使用前面注解的类,使用url作为key保存)
+1.RequestMappingHandlerMapping(<mvc:annotation-driven>解析器注册,用于@Controller,@RequestMapping,会遍历所有使用前面注解的类(进一步遍历方法),使用url作为key保存,HandlerMethod作为value)
 2.BeanNameUrlHandlerMapping(handlerMapping默认实现,根据bean name作为url注册,注册HandlerMapping的地方都会调用注册该HandlerMapping)
 3.SimpleUrlHandlerMapping(<resource >解析器注册,用于映射静态资源, 其它标签也可能再次注册使用该类作为class的bean definition,完成其它功能)
 当收到一个请求时,会遍历所有HandlerMapping,如果有一个HandlerMapping返回了Handler,则停止遍历
@@ -54,12 +53,18 @@ http://www.springframework.org/schema/mvc/spring-mvc.xsd
 1.RequestMappingHandlerAdapter
 2.HttpRequestHandlerAdapter
 3.SimpleControllerHandlerAdapter
-在HanderMapping中找到对应Handler(类HandlerMethod)后,不是直接进行处理,使用HandlerAdapter包装一下,执行HandlerAdaper.handle(),在内部在调用具体的Handler方法
+在HanderMapping中找到对应Handler(类HandlerMethod,或者Controller)后,不是直接进行处理,寻找对应的HandlerAdapter,执行HandlerAdaper.handle(),在内部在调用具体的Handler方法
+在HandlerAdapter中并不是直接使用反射调用HandlerMethod中Method,使用HandlerMethodInvoker包装调用,invoker会做额外的工作,比如使用了@RequestBody注解,则该位置的参数需要使用
+messageConverters转换请求到对应的参数类型,然后该位置的参数值是根据请求自动构建. messageConverters是在解析<annotation-driven>的时候注入到RequestMappingHandlerAdapter中,
 
 
 
 ### HandlerExecuteChain
-因为执行具体的Handler之前还要执行拦截器,所以采用了链式结构,执行具体Handler之前先执行拦截器
+因为执行具体的Handler之前还要执行拦截器,所以采用了链式结构,执行具体Handler之前先执行拦截器,
+
+
+
+
 
 
 
