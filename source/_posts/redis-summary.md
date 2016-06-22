@@ -245,8 +245,9 @@ redis虽然是内存数据库,但也提供了持久化方案
 
 
 # 总结
-1.redis是一个Key-Value内存数据库,也提供持久化支持. 
-2.命令格式: command + key + xxx , key是用来查找值的, 或得值对象后还可以进行进一步操作,比如zrange等等
+
+    1.redis是一个Key-Value内存数据库,也提供持久化支持. 
+    2.命令格式: command + key + xxx , key是用来查找值的, 或得值对象后还可以进行进一步操作,比如zrange等等
 
 
 
