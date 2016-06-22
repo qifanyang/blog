@@ -58,13 +58,12 @@ http://www.springframework.org/schema/mvc/spring-mvc.xsd
 messageConverters转换请求到对应的参数类型,然后该位置的参数值是根据请求自动构建. messageConverters是在解析<annotation-driven>的时候注入到RequestMappingHandlerAdapter中,
 
 
-
 ### HandlerExecuteChain
 因为执行具体的Handler之前还要执行拦截器,所以采用了链式结构,执行具体Handler之前先执行拦截器,
 
 
-
-
+### HttpMessageConverter
+策略接口,根据http请求特征选择不同的converter,例如方法使用了@RequestBody则判断content-type值,遍历messageConverter,寻找能够支持该值的converter并转换
 
 
 
@@ -94,7 +93,7 @@ b.默认采用AcceptHeaderLocaleResolver作为LocaleResolver,见文件Dispatcher
 c.默认采用FixedThemeResolver
 d.handlerMappings为List,从容器中查找所有实现了HandlerMapping的bean,默认有4个,RequestMappingHandlerMapping,SimpleUrlHandlerMapping...,如果某个handlerMapping能够返回一个handler处理,则停止
 d1.RequestMappingHandlerMapping包含一个urlMap,根据请求的url返回RequestMappingInfo,最终找到一个HandlerMethod(包含实例,方法,参数,)
-e.
+
 
 
 
