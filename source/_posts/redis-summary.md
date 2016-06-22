@@ -14,11 +14,12 @@ redis在github上提供源码,可以自己在linux,OSX,FreeBSB下编译,windows�
 下载zip包后解压,执行服务器程序:redis-server.exe, 然后执行客户端程序redis-cli.exe, 就在可以在客户端执行命令了
 
 例子:
-127.0.0.1:6379> set a 111
-OK
-127.0.0.1:6379> get a
-"111"
-127.0.0.1:6379>
+
+    127.0.0.1:6379> set a 111
+    OK
+    127.0.0.1:6379> get a
+    "111"
+    127.0.0.1:6379>
 
 ## 值数据类型
 redis是key-value内存数据库,key为字符串,value有多种数据类型,包含:字符串,列表(list),有序集合(zset),哈希表(hash),集合(set), 和java中的集合类型差不多
@@ -117,6 +118,7 @@ key是string类型, value也有string类型, 所以string类型是很基础的�
 长度是不会变的, redis为了二进制安全还是采用了自定义结构来实现,(jpg图片也可以作为key)
 
 sds == simple dynamic struct
+
     typedef char *sds;
     struct sdshdr {
     // buf 已占用长度
@@ -147,9 +149,10 @@ hash实现可以使用java中的hashmap来理解,不同的是redis rehash不仅�
 跳跃表和红黑树差不多,但实现更简单,估计改造也更简单,所以作者选择了跳跃表,由William Pugh 在论文《Skip lists: a probabilistic
 alternative to balanced trees》中提出, 跳跃表在redis中只用于sorted set实现
 为了适应自身的需求，Redis 基于William Pugh 论文中描述的跳跃表进行了修改，包括：
-1. score 值可重复。
-2. 对比一个元素需要同时检查它的score 和memeber 。
-3. 每个节点带有高度为1 层的后退指针，用于从表尾方向向表头方向迭代。
+
+    1. score 值可重复。
+    2. 对比一个元素需要同时检查它的score 和memeber 。
+    3. 每个节点带有高度为1 层的后退指针，用于从表尾方向向表头方向迭代。
 
 
 ## redis类型系统
@@ -213,10 +216,11 @@ WATCH 命令用于在事务开始之前监视任意数量的键：当调用EXEC 
 
 ### redis事务ACID
 Redis 事务保证了其中的一致性（C）和隔离性（I），但并不保证原子性（A）和持久性（D）
-原子性(A):单个命令是原子的,但是多个命令不是,如果执行事务时宕机,Redis不会进行任何的重试或者回滚动作
-一致性(C):RDB模式,AOF模式
-隔离性(I):通过单线程模型保证
-持久性(D):AOF采用一个后台线程保存事务数据,不能保证事务执行了就代表持久化了
+
+    原子性(A):单个命令是原子的,但是多个命令不是,如果执行事务时宕机,Redis不会进行任何的重试或者回滚动作
+    一致性(C):RDB模式,AOF模式
+    隔离性(I):通过单线程模型保证
+    持久性(D):AOF采用一个后台线程保存事务数据,不能保证事务执行了就代表持久化了
 
 
 ## redis持久化
