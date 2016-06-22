@@ -228,12 +228,14 @@ redis虽然是内存数据库,但也提供了持久化方案
 
 1.RDB
 配置:
+
     save 900 1
     save 300 10
     save 60 10000
 保存内存快照到磁盘,间隔时间大,容易丢失数据,有点是启动加载快. 可以理解为拷贝mysql的数据文件
 2.AOF
-配置
+配置:
+
     # appendfsync always
     appendfsync everysec
     # appendfsync no
