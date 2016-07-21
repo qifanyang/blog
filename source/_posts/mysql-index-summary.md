@@ -31,6 +31,10 @@ c.二级索引,给InnoDB表其它列建立索引叫二级索引,索引值不是�
 type: system < const < eq_ref < ref < ... < index(扫描全部索引) < all(全表扫表)
 rows: 扫描表的行数
 
+## mysql实现乐观锁
+采用一个version值,update  tableName set version=version+1 where id=#{id} and version=#{version}
+并发修改innodb会使用行锁,避免并发修改
+
 
 
 
