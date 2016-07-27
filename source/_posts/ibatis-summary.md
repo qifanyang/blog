@@ -34,23 +34,26 @@ Executor根据ms创建StatementHandler,然后逻辑交给改handler处理
 4.结果集映射,DefaultResultSetHandler负责结果集映射,ibatis最强大的结果集映射在这里实现  
 
 ### ResultSetHandler
-spring jdbc执行完sql之后,用得比较多是交由RowMapper处理ResultSet,一般将结果集映射到具体的java对象,如果对象属性有嵌套关系  
-需要使用硬编码从结果集中取数据构建包含嵌套属性的对象,而ibatis结果集映射将硬编码抽象成配置  
+spring jdbc执行完sql之后,用得比较多是交由RowMapper处理ResultSet,一般将结果集映射到具体的java对象,如果对象属性有嵌套
+关系需要使用硬编码从结果集中取数据构建包含嵌套属性的对象,而ibatis结果集映射将硬编码抽象成配置  
 
 ResultSetHandler使用ms的ResultMap来处理结果集,  
-一个需要关联多张表的查询,查询结果对象如果包含一个引用类型属性,<association>可以准确的将结果集中的值设置到对应的引用属性中  
+一个需要关联多张表的查询,查询结果对象如果包含一个引用类型属性,association可以准确的将结果集中的值设置到对应的引用属性中  
 <association>用来查询嵌套属性,关联元素处理“有一个”类型的关系.  
-嵌套查询,单独使用一个查询<association property="author" column="author_id" javaType="Author" select="selectAuthor"/>  
-嵌套查询结果,查询使用连接<association property="author" column="blog_author_id" javaType="Author" resultMap="authorResult"/>  
-<collection>类似<association>,是用来关联元素处理“有多个”类型的关系.嵌套查询和嵌套结果查询同上  
+嵌套查询,单独使用一个查询  
+    <association property="author" column="author_id" javaType="Author" select="selectAuthor"/>  
+嵌套查询结果,查询使用连接  
+    <association property="author" column="blog_author_id" javaType="Author" resultMap="authorResult"/>  
+collection类似association,是用来关联元素处理“有多个”类型的关系.嵌套查询和嵌套结果查询同上  
 
 有时一个单独的数据库查询也许返回很多不同 (但是希望有些关联) 数据类型的结果集,鉴别器根绝返回值选择resultMap  
-  <discriminator javaType="int" column="vehicle_type">
-    <case value="1" resultMap="carResult"/>
-    <case value="2" resultMap="truckResult"/>
-    <case value="3" resultMap="vanResult"/>
-    <case value="4" resultMap="suvResult"/>
-  </discriminator>  
+
+    <discriminator javaType="int" column="vehicle_type">
+        <case value="1" resultMap="carResult"/>
+        <case value="2" resultMap="truckResult"/>
+        <case value="3" resultMap="vanResult"/>
+        <case value="4" resultMap="suvResult"/>
+    </discriminator>  
 
 
 ### ResultMap
@@ -58,7 +61,8 @@ ResultSetHandler使用ms的ResultMap来处理结果集,
 当mappedStatement使用ResultType,ibatis默认创建的ResultMap,id为namespace-Inline,type为resultType类型,自动创建映射  
 所以ResultType只是一种更加自动化的ResultMap实现,具体实现都是通过ResultMap.  
 
-
+### TypeHandler
+当ResultSet中具体一列的值映射到java属性时,需要用TypeHandler负责转换,同理写java到数据库时也要转换,
 
 ## ibatis中用到的设计模式
 1.静态代理  
