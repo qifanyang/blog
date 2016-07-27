@@ -13,7 +13,7 @@ tags: ibatis
 Configuration(配置中心),Executor,SqlSession,MapperProxy(helper class),MappedStatement
 
 ### MappedStatement
-MappedStatement对应mapper.xml中的一个<select .../>或者其它声明,一个声明主要包含以下属性:  
+MappedStatement对应mapper.xml中的一个select或者其它声明,一个声明主要包含以下属性:  
 1.声明id,全局唯一  
 2.sqlCommandType,查询类型select,update...  
 3.parameterMap,已经废弃  
