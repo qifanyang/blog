@@ -73,7 +73,10 @@ Cache实现中大量使用静态代理,比如LruCache,实际数据存储代理�
 在使用Mapper接口查找MappedStatement,并执行查询时动态创建sqlSession.select(steamentId...),当然接口的包名+类名+方法名  
 要和mapper.xml中namespace id和steatment id对应,jdk动态代理会缓存Class所以开销不大  
 
-3.
+3.effective java builder模式  
+因配置文件参数较多,构建配置相关的对象,比如MappedStatement使用Builder模式,方便校验哪些参数必须配置的,不干扰业务对象  
+
+  
 
 
 
