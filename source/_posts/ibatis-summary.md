@@ -63,10 +63,31 @@ collection类似association,是用来关联元素处理“有多个”类型的�
 ### ResultMap
 负责ResultSet到java对象的映射,指定数据库列属性如何映射到java对象,ResultMap中type属性指定要返回的对象类型,  
 当mappedStatement使用ResultType,ibatis默认创建的ResultMap,id为namespace-Inline,type为resultType类型,自动创建映射  
-所以ResultType只是一种更加自动化的ResultMap实现,具体实现都是通过ResultMap.  
+所以ResultType只是一种更加自动化的ResultMap实现,具体实现都是通过ResultMap.一个声明既没有ResultMap也没有ResultType  
+那么当处理结果集映射的时候会因为无法处理映射抛出异常 
+
+自动映射和手动映射可以配合一起使用,用于特别列的处理    
+```xml
+    <select id="selectUsers" resultMap="userResultMap">
+        select
+            user_id             as "id",
+            user_name           as "userName",
+            hashed_password
+        from some_table
+        where id = #{id}
+    </select>
+    <resultMap id="userResultMap" type="User">
+        <result property="password" column="hashed_password"/>
+    </resultMap>     
+```
 
 ### TypeHandler
-当ResultSet中具体一列的值映射到java属性时,需要用TypeHandler负责转换,同理写java到数据库时也要转换,
+当ResultSet中具体一列的值映射到java属性时,需要用TypeHandler负责转换,同理写java到数据库时也要转换  
+
+## 插件（plugins）
+类似spring aop,因为spring bean是容器管理,所以可以很容易定义一个BeanPostProcessor来拦截,在ibatis中采用的是硬编码  
+在特定的地方调用插件安装方法,在定义插件时需要使用注解指定拦截的类,方法和参数,然后ibatis在创建对应对象的时候就会使用  
+动态代理创建拦截
 
 ## ibatis中用到的设计模式
 1.静态代理  
@@ -76,6 +97,8 @@ Cache实现中大量使用静态代理,比如LruCache,实际数据存储代理�
 2.动态代理  
 在使用Mapper接口查找MappedStatement,并执行查询时动态创建sqlSession.select(steamentId...),当然接口的包名+类名+方法名  
 要和mapper.xml中namespace id和steatment id对应,jdk动态代理会缓存Class所以开销不大  
+
+插件Interceptor也使用动态代理  
 
 3.effective java builder模式  
 因配置文件参数较多,构建配置相关的对象,比如MappedStatement使用Builder模式,方便校验哪些参数必须配置的,不干扰业务对象  
