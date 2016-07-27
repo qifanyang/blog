@@ -41,20 +41,24 @@ ResultSetHandler使用ms的ResultMap来处理结果集,
 一个需要关联多张表的查询,查询结果对象如果包含一个引用类型属性,association可以准确的将结果集中的值设置到对应的引用属性中  
 <association>用来查询嵌套属性,关联元素处理“有一个”类型的关系.  
 嵌套查询,单独使用一个查询  
-    <association property="author" column="author_id" javaType="Author" select="selectAuthor"/>  
+```xml
+    <association property="author" column="author_id" javaType="Author" select="selectAuthor"/> 
+``` 
 嵌套查询结果,查询使用连接  
+```xml
     <association property="author" column="blog_author_id" javaType="Author" resultMap="authorResult"/>  
+```
 collection类似association,是用来关联元素处理“有多个”类型的关系.嵌套查询和嵌套结果查询同上  
 
 有时一个单独的数据库查询也许返回很多不同 (但是希望有些关联) 数据类型的结果集,鉴别器根绝返回值选择resultMap  
-
+```xml
     <discriminator javaType="int" column="vehicle_type">
         <case value="1" resultMap="carResult"/>
         <case value="2" resultMap="truckResult"/>
         <case value="3" resultMap="vanResult"/>
         <case value="4" resultMap="suvResult"/>
     </discriminator>  
-
+```
 
 ### ResultMap
 负责ResultSet到java对象的映射,指定数据库列属性如何映射到java对象,ResultMap中type属性指定要返回的对象类型,  
@@ -76,7 +80,7 @@ Cache实现中大量使用静态代理,比如LruCache,实际数据存储代理�
 3.effective java builder模式  
 因配置文件参数较多,构建配置相关的对象,比如MappedStatement使用Builder模式,方便校验哪些参数必须配置的,不干扰业务对象  
 
-  
+
 
 
 
