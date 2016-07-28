@@ -85,9 +85,18 @@ collection类似association,是用来关联元素处理“有多个”类型的�
 当ResultSet中具体一列的值映射到java属性时,需要用TypeHandler负责转换,同理写java到数据库时也要转换  
 
 ## 插件（plugins）
-类似spring aop,因为spring bean是容器管理,所以可以很容易定义一个BeanPostProcessor来拦截,在ibatis中采用的是硬编码  
-在特定的地方调用插件安装方法,在定义插件时需要使用注解指定拦截的类,方法和参数,然后ibatis在创建对应对象的时候就会使用  
-动态代理创建拦截
+类似spring aop,因为spring bean是容器管理,所以可以很容易定义一个BeanPostProcessor来实现拦截,在ibatis中采用的是  
+硬编码,在特定的地方调用插件安装方法(就是硬编码实现PointCut),在定义插件时需要使用注解指定拦截的类,方法和参数  
+然后ibatis在创建被拦截对象的时候,会检查拦截器注解是否和当前对象匹配,匹配的话就会使用动态代理创建拦截代理对象  
+
+## SqlSource
+MappedStatement中的content为要执行的sql来源,content可以使简单的sql语句,也可以是带有条件判断的动态sql  
+
+    a.对于是简单的sql,使用StaticSqlSource表示, 例如:select * from tableName;  
+    b.对于动态sql,使用DynamicSqlSource,需要使用类似编译原理生成一棵语法树,然后执行每个表达式,执行结果转化为简单sql,  
+    然后同上,创建StaticSqlSource.  
+    c.最终创建BoundSql(configuration, sql, parameterMappings, parameterObject),交给StatementHandler处理  
+
 
 ## ibatis中用到的设计模式
 1.静态代理  
