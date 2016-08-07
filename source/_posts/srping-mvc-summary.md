@@ -54,7 +54,7 @@ http://www.springframework.org/schema/mvc/spring-mvc.xsd
 2.HttpRequestHandlerAdapter
 3.SimpleControllerHandlerAdapter
 在HanderMapping中找到对应Handler(类HandlerMethod,或者Controller)后,不是直接进行处理,寻找对应的HandlerAdapter,执行HandlerAdaper.handle(),在内部在调用具体的Handler方法
-在HandlerAdapter中并不是直接使用反射调用HandlerMethod中Method,使用HandlerMethodInvoker包装调用,invoker会做额外的工作,比如使用了@RequestBody注解,则该位置的参数需要使用
+在HandlerAdapter中并不是直接使用反射调用HandlerMethod中Method,HandlerMethodArgumentResolver负责参数转换,使用HandlerMethodInvoker包装调用,invoker会做额外的工作,比如使用了@RequestBody注解,则该位置的参数需要使用
 messageConverters转换请求到对应的参数类型,然后该位置的参数值是根据请求自动构建. messageConverters是在解析<annotation-driven>的时候注入到RequestMappingHandlerAdapter中,
 
 

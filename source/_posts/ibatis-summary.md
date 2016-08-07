@@ -21,10 +21,10 @@ MappedStatement对应mapper.xml中的一个select或者其它声明,一个声明
 5.sqlSource,要执行的sql,有StaticSqlSource(没有<if test="id != null"/>),有动态DynamicSqlSource(包含<if ...),用于创建BoundSql    
 
 ### SqlSession
-默认实现DefaultSqlSession,主要包含属性Configuration和Executor,负责执行各种数据库操作  
+默认实现DefaultSqlSession,主要包含属性Configuration和Executor,提供执行各种数据库操作接口,实际操作由Executor完成     
 
 ### Executor
-执行MappedStatement,执行缓存策略(如果是CachingExetutor),具体数据库操作有delegateExecutor完成  
+执行MappedStatement,执行缓存策略(如果是CachingExetutor),具体数据库操作有delegateExecutor完成,实现一般在BaseExecutor中    
 
 ### StatementHandler
 Executor根据ms创建StatementHandler,然后逻辑交给改handler处理  
