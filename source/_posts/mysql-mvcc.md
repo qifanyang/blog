@@ -25,7 +25,7 @@ http://dev.mysql.com/doc/refman/5.7/en/innodb-consistent-read.html
 实现原理就是事务A创建读一致性时,创建了一个当前时间点的数据库快照,而事务B删除数据,会将老的数据写入到undo log中,事务A查询  
 数据是返回的undo log中的数据,这类似copyOnWrite,如同linux实现数据快照一样,只有当修改时才修改快照数据,并拷贝原始数据  
 
-## redo log
+## redo log(文件ib_logfile0,ib_logfile1)
 A disk-based data structure used during crash recovery, to correct data written by incomplete transactions.  
 During normal operation, it encodes requests to change InnoDB table data, which result from SQL statements   
 or low-level API calls through NoSQL interfaces. Modifications that did not finish updating the data files  
@@ -50,5 +50,33 @@ innodb_undo_tablespaces and innodb_undo_directory configuration options to split
 tablespace files, the undo tablespaces, optionally stored on another storage device such as an SSD.  
 
 The undo log is split into separate portions, the insert undo buffer and the update undo buffer.  
+
+
+## binary log
+用于主从,slave重做数据,master也可以根据binary log在恢复数据,但是事务没有提交的话binary log中没有记录  
+
+mysql server崩溃重启,如果事务已经写入binary log则会提交事务,如果没有提交或者处于XA PREPARE状态,则回滚,分布式事务如果有参与者提交了,则PREPARE状态事务应该提交  
+
+## 2PC异常恢复
+
+在crash recover之后，外部应用程序可能会遇到以下几种情况：  
+情况一：分布式事务对应的MySQL实例，部分完成prepare，部分未完成prepare。此时直接回滚完成prepare的实例即可。n_prepared <Total Nodes (处于prepare状态的节点数量要小于参与分布式事务的所有节点总数)。  
+ 
+
+情况二：分布式事务对应的MySQL实例，全部完成prepare，未开始进行commit。此时即可提交此事务，也可回滚此事务(根据分布式事务原理，所有节点都完成prepare，应该提交)。n_prepared = Total Nodes。  
+ 
+
+情况三：分布式事务对应的MySQL实例，全部完成prepare，并且部分节点已经完成commit。此时应该提交该事务处于prepare状态的节点。n_prepared 小于 Total Nodes。对比情况三与情况一，仅仅通过prepare节点的数量无法区分，  
+因此应用程序需要在prepare完成之后记录日志(此时，应用程序起着事务协调者(Transcaction Coordinator)的角色，而根据MariaDB WorkLog#132[5]的说法，TC角色是可以进行”middle engine”优化的，不需要prepare过程，  
+所有MySQL节点xa prepare返回之后，应用程序直接写commit标识即可，然后再对每个MySQL节点进行xa commit操作。)，从而用于区分情况一与情况三。
+ 
+情况四：分布式事务对应的MySQL实例，全部完成commit。此时事务已经提交成功，xid不会出现在执行xa recover的任一个节点。不需要特殊处理。
+情况五：未记录任何prepare日志。那么所有的事务，在各个存储引擎的crash recover时，都会被回滚，不需要外部特殊处理。  
+
+## 分布式事务
+企业级java开发使用JTA实现分布式事务,j2ee application server实现了JTATransactionManager,可以直接使用应用服务器的实现  
+也可以单独使用JTA实现,比如atomikos等,http://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-jta.html  
+
+JMS也实现了XA协议,也可以参数分布式事务  
 
 
