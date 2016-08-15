@@ -80,3 +80,30 @@ mysql server崩溃重启,如果事务已经写入binary log则会提交事务,�
 JMS也实现了XA协议,也可以参数分布式事务  
 
 
+## JTA
+j2ee事务规范,可以实现分布式事务,jta提供相应接口,atomikos实现了独立于appllication server的JTA实现  
+Java Transaction API (JTA) specifies standard Java interfaces between a transaction manager and the parties involved in a distributed transaction system: the resource manager,  
+the application server, and the transactional applications.  
+
+## JPA
+The Java Persistence API provides a POJO persistence model for object-relational mapping. The Java Persistence API was developed by the EJB 3.0 software expert group as part of JSR 220,  
+but its use is not limited to EJB software components. It can also be used directly by web applications and application clients, and even outside the Java EE platform, for example, in Java SE applications  
+
+JPA为实现ORM映射提供了一个POJO持久化实体模型,JPA在EJB3.0中开发,但是不受限与EJB组件,能够直接在web应用程序中使用  
+
+spring data JPA 提供更方便的方式使用jpa,只需要写出接口,spring 创建动态代理对象,根据方法名字来自动生成查询语句,这和mybatis mapper接口类似  
+spring data JPA处理复查查询采用自动生成代理类并不现实,可以实现接口,然后在实现类中书写复杂sql,对于一个复杂sql,处理结果集映射就比较麻烦了,  
+所以引入mybatis吧,所以根据项目情况决定采用JPA还是mybatis吧  
+
+JPA是一种规范,为了统一Hibernate,TopLink,JDO各种ORM,
+
+https://www.ibm.com/developerworks/cn/opensource/os-cn-spring-jpa/  
+
+
+
+
+
+
+
+
+
