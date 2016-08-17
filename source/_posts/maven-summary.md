@@ -122,6 +122,11 @@ deploy	deploy:deploy
 
 所以关键几个概念:lifecycle,phase,goal,packaging  
 
+## 参考链接
+https://github.com/alibaba/canal/blob/master/pom.xml  
+https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#Packaging  
+
+
 
 
 
