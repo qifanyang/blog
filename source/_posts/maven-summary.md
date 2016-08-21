@@ -74,6 +74,8 @@ maven继承,可以在父pom中设置各种属性,依赖等等,继承达到复用
 ```
 注意maven有传递依赖的特性,会自动把依赖的依赖包含进来,这样会引入版本冲突,如果依赖的依赖冲突而且高版本是兼容低版本  
 那么,可以把低版本的依赖排除掉,使用exclusion.如果依赖的依赖版本不兼容,那么需要引入classloader来隔离各自的依赖了  
+依赖scope,maven在编译,测试,运行 都有自己的classpath, scope指明依赖在那个classpath有效,比如test,表明在测试phase  
+该依赖被加入,provider表明该依赖有jdk或容器提供,默认是compile,在各个classpath都有效
 
 ## 构建配置
 ```xml
@@ -101,6 +103,13 @@ maven继承,可以在父pom中设置各种属性,依赖等等,继承达到复用
                 </executions>
             </plugin>
         </plugins>
+
+         <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
     </build>
 ```
 可是使用很多插件,自定义构建过程,为了配置默认的插件行为,需要在项目pom中明确配置插件属性,上面配置了每次default lifecycle  
@@ -120,12 +129,15 @@ deploy	deploy:deploy
 
 执行一个goal,对应生命周期phase之前的phase都会先执行,比如complie,那么会先执行resources:resources  
 
+第一次执行goal,会自动下载依赖的插件,所以第一次运行很慢  
+
 所以关键几个概念:lifecycle,phase,goal,packaging  
 
 ## 参考链接
 https://github.com/alibaba/canal/blob/master/pom.xml  
 https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#Packaging  
-
+https://maven.apache.org/guides/getting-started/index.html  
+https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html  
 
 
 
