@@ -46,12 +46,15 @@ ThreadLocal局部变量的生命周期和线程一样,而且使用了弱引用,�
 一般外部没有强引用指向,所以该value是可以被回收  
 
 
-3.在访问ThreadLocal get,set时,会自动去检查ThreadLocalMap的弱引用为被垃圾回收没有,如果被回收了,那么将线程局部变量value=null,让其可以被垃圾回收
+3.在访问ThreadLocal get,set时,会自动去检查ThreadLocalMap的弱引用为被垃圾回收没有,如果被回收了,那么将线程局部变量value=null,让其可以被垃圾回收,所以弱引用  
+实现需要手动触发回收相关内存  
 
 ## tips
 1.软引用,当内存不足时会被垃圾回收,用于做缓存  
 2.弱引用,当只有弱引用存在,就会被垃圾回收  
 3.引用队列,当垃圾回收时,会被放入refrence queue, 还有机会被重新使用,告诉GC不要回收  
+4.WeakHashMap, Entry继承WeakRefrence,put时key会被作为WeakRefrence,如果是HashMap如果不手动remove那么value一直存在,而对于WeakRefrence如果没有其它地方使用key  
+(没有强引用),那么该key就可以被回收,何时回收value呢?在get,put时都会自动去检查key是否被回收,如果回收了则回收value和entry,缺点是要等到手动调用get,set时才会回收value  
 
 
 
