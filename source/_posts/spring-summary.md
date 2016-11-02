@@ -253,7 +253,12 @@ ReaderContext-->上下文
 
 ## Autowired
 最常用的Autowired,可以作用于字段,方法, 使用AutowiredAnnotationBeanPostProcessor处理,从bean factory中去寻找指定类型的依赖,如果该类型有多个实例,在依赖的实例上使用@Primary,表明注入这个实例
-也可以使用@Autowired @Qualifier明确指出依赖注入哪一个
+也可以使用@Autowired @Qualifier明确指出依赖注入哪一个  
+
+## AbstractAutoProxyCreator
+声明式事务等会自动创建代理,AbstractAutoProxyCreator子类完成该功能,AbstractAutoProxyCreator是一个BeanPostProcessor,获取bean时自动创建代理对象,实现为jdk代理或者cglib代理  
+当执行事务方法调用时,会先执行代理的invoke,如果有advisor则创建ReflectiveMethodInvocation来完成调用,ReflectiveMethodInvocation先依次调用TransanctionInterceptor等advice,  
+最后调用实际的target method,
 
 
 
