@@ -75,7 +75,12 @@ tags: GIT
 
 	github默认远程库约定叫origin
 
+## 删除版本库中的big file
+	github仓库大小有限制,当空间不足时需要删除仓库中不重要的大文件,但是github仓库中还保留这这个大文件,如何移除
 
+	1.查看空间大小
+		git gc //整理
+		git count-objects //输出的size-pack 为仓库大小, K为单位
 
 
 use `java java`
