@@ -81,6 +81,8 @@ tags: GIT
 	1.查看空间大小
 		git gc //整理
 		git count-objects //输出的size-pack 为仓库大小, K为单位
+	2.识别出大对象
+	 git verify-pack
 
 
 use `java java`
