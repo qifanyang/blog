@@ -59,7 +59,8 @@ messageConverters转换请求到对应的参数类型,然后该位置的参数�
 
 
 ### HandlerExecuteChain
-因为执行具体的Handler之前还要执行拦截器,所以采用了链式结构,执行具体Handler之前先执行拦截器,
+因为执行具体的Handler之前还要执行拦截器,所以采用了链式结构,执行具体Handler之前先执行拦截器,HandlerInterceptor和Filter功能有点类似,  
+区别在于HandlerInterceptor设计用来编写公共的handler code,比如权限检查,而Filter是针对每个request和response,所以看应用场景  
 
 
 ### HttpMessageConverter
