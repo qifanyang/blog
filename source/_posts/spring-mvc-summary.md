@@ -40,6 +40,18 @@ servlet加载完spring-servlet.xml配置文件后,开始初始化spring-mvc
 http://www.springframework.org/schema/mvc
 http://www.springframework.org/schema/mvc/spring-mvc.xsd
 
+
+## springMVC实现
+1.配置文件中使用自定义标签  
+<mvc:annotation-driven>  
+<mvc:message-converters>  
+...//还有更多见MvcNamespaceHandler  
+
+
+其中<mvc:annotation-driven>,默认注册RequestMappingHandlerMapping来处理注解映射,该类的父类AbstractHandlerMethodMapping是InitializingBean子类,  
+在加载完bean definition之后实例化该bean会调用afterPropertiesSet()执行initHandlerMethods(),  
+该方法遍历bean factory中所有的bean definition的class,根据是否使用了@Controller和@RequestMapping注解,使用了的话继续检查class中method,检查@RequestMapping注解,创建RequestMappingInfo  
+
 ## spring-mvc主要组件,主要采用spring标签扩展机制实现
 ### HandlerMapping
 处理请求映射,收到http请求,根据请求去查找对应的Handler,实现有:
@@ -65,16 +77,6 @@ messageConverters转换请求到对应的参数类型,然后该位置的参数�
 
 ### HttpMessageConverter
 策略接口,根据http请求特征选择不同的converter,例如方法使用了@RequestBody则判断content-type值,遍历messageConverter,寻找能够支持该值的converter并转换
-
-
-
-
-
-spring-mvc自定义了一套标签,<mvc:annotation-driven>,<mvc:message-converters>等来实现mvc功能,根据spring标签扩展可以肯定一定有个标签解析namespaceHandler
-1.<mvc:annotation-driven>,默认注册RequestMappingHandlerMapping来处理注解映射,该类也是InitializingBean子类,在加载完bean definition之后实例化会调用afterPropertiesSet()执行initHandlerMethods(),
-该方法遍历bean factory中所有的bean definition的class,根据是否使用了@Controller和@RequestMapping注解,使用了的话继续检查class中method,检查@RequestMapping注解,创建RequestMappingInfo
-
-
 
 
 protected void initStrategies(ApplicationContext context) {
