@@ -176,7 +176,8 @@ newTransaction字段只有在创建事务事务时设置为true,如果是require
 因为实例方法调用是通过this.methodName(),不是调用代理对象的引用来调用,所以拦截器无法被应用,如果要在实例方法  
 中调用另外一个方法并且要执行拦截器,可以使用AopContext.currentProxy(),spring使用ThreadLocal存储代理对象  
 
-如果调用其它类的非事务方法,方法和类上都没有事务注解,因为没有事务注解,所以不会有TransactionInterceptor增强,执行jdbc操作直接进入  
+如果调用其它类的非事务方法,方法和类上都没有事务注解,如果当前方法处于事务中,那么被调用方法也会加入到当前事务,  
+如果代码中进行细粒度的事务控制,只在有数据库操作的地方开启或关闭事务,代码维护时容易出错    
 Connection con = DataSourceUtils.getConnection(getDataSource());  
 因为被调用的方法是另外一个类中的方法,那么原来的事务方法将会执行完毕,执行doCleanupAfterCompletion(Object transaction)  
 如果事务入口的方法执行完毕,会解绑在TransactionSynchronizationManager的conHolder,当非事务方法执行时下面获取连接代码时  
@@ -185,7 +186,7 @@ conHolder为空,那么从datasource中获取一个新的数据库连接,如果�
 避免开发时的事务管理,结果在写代码的过程中还要去分析开启事务后,接下来的逻辑哪里要加事务哪里不加事务注解,无语!!!  
 
 调用其它类,如果使用了事务注解,那么会创建代理,方法调用会执行拦截器,效率是不如不创建代理,但是为了这么一点效率埋下一个雷更不好,  
-只有当业务中使用事务注解的地方存在性能瓶颈时再去考虑才是合适的,正需能正确的运行然后再去考虑效率  
+只有当业务中使用事务注解的地方存在性能瓶颈时再去考虑才是合适的,能正确的运行然后再去考虑效率  
 ~~~
 //事务方法执行doBegin(Object transaction, TransactionDefinition definition)会设置数据库连接,这里可以使用
 //

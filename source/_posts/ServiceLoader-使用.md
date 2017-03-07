@@ -27,7 +27,7 @@ DriverManager获取连接时,会首先加载所有驱动(loadInitialDrivers),JDB
 
 ## JDBC 4改进
 在jdbc 4.0之前,使用jdbc需要显示使用Class.forname("com.mysql.jdbc.Driver")来初始化驱动类,但是在JDBC 4.0之后使用了ServiceLoader,驱动需要编写  
-META-INF/services/java.sql.Driver文件就不用再显示加载驱动了    
+META-INF/services/java.sql.Driver文件就不用再显示加载驱动了,that's why can not load driver explicitly      
 
 ## LazyIterator
 JDBC遍历各种实现时并不是一次性加载所有实现,而是一个文件一个文件的遍历,防止加载不必要的类  

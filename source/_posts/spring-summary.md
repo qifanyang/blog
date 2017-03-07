@@ -132,9 +132,15 @@ spring boot 和 spring cloud使用该方式
 
 ## spring如何解决循环依赖
 A依赖B,B依赖A, 如何解决循环依赖,首先对于scope为prototype的bean,因为spring不会缓存这类bean的实例,所以无法解决循环依赖(创建时缓存了呢?)
-用一次创建A和B为例子,spring创建bean A单例实例,不会直接创建bean实例,而是创建ObjectFactory,在需要访问bean A时,使用回调返回bean A(这里的bean A属性没有填充完毕), 当A populateBean属性是实例化B, 而B的populateBean又需要A, 这时返回的A是通过
-ObjectFactory返回的,其属性没有被填充,但是可以用于设置B属性,  当A的依赖填充完毕后, B中引用的A也同时被填充完毕...
+用一次创建A和B为例子,spring创建bean A单例实例,先将自己的objectFactory实例放入singletonFactories,  
 
+不会直接创建bean实例,而是创建ObjectFactory,在需要访问bean A时,使用回调返回bean A(这里的bean A属性没有填充完毕), 当A populateBean属性是实例化B, 而B的populateBean又需要A, 这时返回的A是通过
+ObjectFactory.getEarlyBeanRefreance()返回的,该bean没有执行populateBean方法,其属性没有被填充,但是可以用于设置B属性, 当B被实例化完成,然后A的依赖也填充完毕后, B中引用的A也同时被填充完毕...
+
+从getBean如果去获取一个bean A实例是允许allowEarlyRefrence,但是singletonFactories并没有对应objectFactory,然后开始传经实例  
+创建实例A首先创建其objectFactory然后放入singleFactories,在计算A的依赖时,创建B,创建B重复创建A的过程,如果B依赖了A,那么使用  
+getBean去查找A,因为是allowEarlyRefrence,所以调用A的objectFactory.getObject方法,这时候返回的是未设置属性的A,这时候将A放入  
+earlySingletonObjects中,并从objectFactories中移除,提前曝光了A
 
 ## spring AOP
 1.使用@Aspectj
