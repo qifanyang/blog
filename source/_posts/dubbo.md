@@ -94,3 +94,47 @@ public class XxxServiceImpl implements XxxService {
 ~~~
 spring事务管理使用ThreadLocal来隐式传参,只用于框架集成,常规业务不应该使用,把ThreadLocal比作一道门,门打开就表示可以让人进去,可以把们隐藏,但找到了也是可以进门的
 所以不要在业务代码中使用ThreadLocal传参
+
+## dubbo filter
+dubbo ServerConfig在spring注入service后会暴露服务,将Service实现使用动态代理创建统一包装的Invoker 
+服务暴露通过Protocol.export实现,暴露服务会使用ProtocolFilterWrapper.buildInvokerChain()使用filter  
+包装服务实现(filter chain模式),激活的filter可以根据url来获取,ExceptionFilter就是通过这种方式实现  
+还有各种统计调用Filter都是这种模式实现,Filter模式可以实现对服务实现者透明,又可以对服务调用做监控  
+
+
+## dubbo扩展
+Protocol protocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();  
+dubbo使用了很多这种方式来查找具体实现,通过接口名和Adaptive注解,或者方法中指定url中key来寻找扩展
+
+扩展具体实现在配置文件中,类似spring namespace handler
+
+## dubbo异常封装
+使用动态生成的Wrapper对象调用对应serviceImpl方法,如果抛出异常,统一包装成InvocationTargetException  
+如下:  
+~~~
+//        try {
+//
+//            if ("build".equals($2) && $3.length == 1) {
+//                return ($w) w.build((java.lang.String) $4[0]);
+//            }
+//        } catch (Throwable e) {
+//            throw new java.lang.reflect.InvocationTargetException(e);
+//        }
+~~~
+然后在AbstractProxyInvoker的invoke中统一处理,捕获异常并返回带有异常的RpcResult,然后  
+在ExceptionFilter就可以处理异常了    
+~~~
+       try {
+            return new RpcResult(doInvoke(proxy, invocation.getMethodName(), invocation.getParameterTypes(), invocation.getArguments()));
+        } catch (InvocationTargetException e) {
+            return new RpcResult(e.getTargetException());
+        } catch (Throwable e) {
+            throw new RpcException("Failed to invoke remote proxy method " + invocation.getMethodName() + " to " + getUrl() + ", cause: " + e.getMessage(), e);
+        }
+~~~
+关于Wrapper的使用,如果直接调用被代理的方法,需要查找proxy的方法,每次调用都要使用反射查找,效率不高?  
+所以使用类似字节码技术,生成一个方法的直接调用,但是java 反射调用超过一定次数也会创建字节码来优化  
+反射调用,默认15次反射调用,所以这个优化没有多大必要,反而害得我找了半天在哪里将异常包装到RpcResult  
+
+在字节码中将Throwable异常包装成了InvocationTargetException  
+

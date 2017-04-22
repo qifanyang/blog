@@ -81,3 +81,9 @@ QRTZ_TRIGGERS	存储已配置的Trigger的信息
 调度任务并发执行时,先获取数据库行锁,然后执行任务,集群中其它机器无法获取到行锁则阻塞,当获取到行锁的机器执行成功  
 后更新jobdetail,被阻塞的机器获取到锁后继续等待  
 
+quratz threadPool采用wait(500),然后如果runnable部位空运行其runabble,有任务提前来了会被notifyAll唤醒  
+
+QuartzSchedulerThread采用wait(1000),先查找线程池是否有空闲线程,没有则阻塞(misfired thread处理超时),  
+使用JobStore查找一定时间内将要出发的Trigger,然后wait util the fire time to come,然后使用线程池中  
+的线程运行触发的job  
+
