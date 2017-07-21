@@ -19,8 +19,8 @@ public class UserServiceImpl implements UserService {
 上面的代码可能会爆出异常,如果RoleServiceImpl是基于JDK动态代理创建的对象(使用AOP,比如@Transaction注解).  
 因为基于接口的JDK动态代理是创建的另一个类并实例化,虽然A1和A2实现相同的接口A,但是A1的引用不能指向A2的实例  
 ## 注入RoleServiceImpl过程
-    如果被AOP增强,从spring容器中获取实例时,会被增强.比如使用AbstractAdvisorAutoProxyCreator创建  
-代理.  
+    解析依赖时,遍历容器类所有bean定义,如果bean定义是属性引用的子类,那么作为condidate返回,被依赖的  
+bean没有实例化会实例化,有多个候选对象时需要选择一个实例对象注入,如果没法确定一个实例对象,抛出异常    
 
 ## 解决办法  
 1.不能使用代理对象,也就是不能使用aop  
