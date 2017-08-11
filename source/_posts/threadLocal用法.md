@@ -5,10 +5,10 @@ tags: java
 ---
 
 # 介绍
-    ThreadLocal通常叫线程局部变量,认为换种叫法更好理解:线程内的全局变量,意思就是在一个  
+ThreadLocal通常叫线程局部变量,认为换种叫法更好理解:线程内的全局变量,意思就是在一个  
 线程中可以像访问全局变量一样访问      
 
-##用法
+## 用法
 ~~~
 public class Service{
 	private static ThreadLocal<InterestService> instance = new ThreadLocal() {
@@ -26,18 +26,18 @@ public class Service{
 }
 ~~~
 
-##相关类和方法
+## 相关类和方法
 ThreadLocal.入口,创建实例后,使用set(),get()即可  
 ThreadLocal.ThreadLocalMap 用于存储线程本地变量的map,不同于HashMap,采用开放地址法解决冲突     
 Thread 线程,包含属性ThreadLocalMap实例,ThreadLocal的set和get从这里获取值     
 Thread.currentThread() 本地方法,获取当前线程  
 WeakRefrence ThreadLocalMap中Entry继承该类,创建指向ThreadLocal的弱引用    
 
-##如果采用全局map实现
+## 如果采用全局map实现
 1.多线程访问需要同步,高并发同步开销大,因为没有线程间通信所以不需要全局map    
 2.线程异常退出无法从map中移除造成内存泄漏,当然开个定时器检查线程是否存活也可以避免内存泄漏   
 
-##ThreadLocal引入
+## ThreadLocal引入
 既要避免线程间通信开销,又要实现全局变量的效果,于是就产生了线程内的全局变量,方法中任意地方可以随时  
 访问,不用担心线程安全问题  
 
@@ -48,7 +48,7 @@ WeakRefrence ThreadLocalMap中Entry继承该类,创建指向ThreadLocal的弱引
 
 2.ThreadLocalMap使用weakRefrence包装作为key的ThreadLocal.  
 
-##线程退出,那么会内存泄露么?
+## 线程退出,那么会内存泄露么?
 测试代码,需要设置虚拟机内存 -Xms256m -Xmx256m
 ~~~
 public class WeakRefrenceTest{
@@ -163,7 +163,7 @@ debug分析,当调用了Thread.interrupt()之后,workThread中的threadLocals指
 ~~~
 threadLocals = null;所以gc时,可以回收掉放在线程局部变量内容  
 
-##ThreadLocal为什么要包装成弱引用?
+## ThreadLocal为什么要包装成弱引用?
 如果有100线程局部变量,当要从100线程中移除,该怎么做?  
 可以在每个线程的业务代码中调用threadLocal.remove();但是没法获取每个线程  
 如果是有个全局变量存储了所有线程,在每个线程中执行threadLocal.remove()就可以移除全部.  
@@ -178,7 +178,7 @@ java的解决方法是能够访问线程就显示threadLocal.remove()移除,不�
 
 问题:如果没有访问线程局部变量那么会存在内存泄漏
   
-##应用
+## 应用
 spring事务控制  
 aop开启事务,将事务对象放入ThreadLocal中,方法调用时根据事务传播属性新建/挂起/加入 事务等等  
 
