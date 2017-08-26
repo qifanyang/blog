@@ -19,6 +19,11 @@
 ~~~
 src/myutil
 package mymath
+
+//字段名首字母大写,表示暴露字段, 可通过mymath.X访问
+var X int = 1
+
+//函数名首字母大写,表示暴露方法,类似Node.js的exports, 可通过mymath.Add()调用
 func Add(x int, y int) int {
     return x+y
 }
