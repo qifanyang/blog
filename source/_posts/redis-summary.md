@@ -4,6 +4,23 @@ date: 2016-06-21 10:37:41
 tags:
 ---
 
+## 面试
+1.数据结构,key-value,set,sorted set,list,map
+2.expire,过期.可以用于实现简单分布式锁.过期是针对key, hset的field无法使用
+    过期策略:
+    a.访问key时从keyspace移除,
+    b.定时检查expire set,随机测试20个key,并将过期的key移除,如果过期的key占比达到25%,继续随机
+3.sentinal
+    a.类似zk,提供HA,master选举,配置管理
+    b.redis主从replication是异步的,会存在数据丢失.min-slaves-to-write 1 min-slaves-max-lag 10
+    可以减轻丢失数据数量.所以redis sentinel不能用在一致性要求很高的场景,但作为缓存足够了
+
+4.分布式锁
+    带过期时间的key,存在单点故障,如果加入slave,不能保证任一时间只有一个client获取锁.但是可以把这个结合
+    数据库的乐观锁一起来使用,带过期时间的分布式锁保证了数据库几乎不冲突,所以数据库再使用乐观锁.
+    数据库乐观锁没有使用行锁,开销更小.如果在应用层加上分布式锁,冲突时就不用浪费数据库连接,开启新的事务了 
+    RedLock是官方的分布式锁解决办法
+
 ## 摘要
 差不多一年前用了下redis,很久不用之后又忘记,和使用mongodb一样,看了的东西一段时间不用就会忘记,so需要记录笔记,把要点和心得记录下来供以后翻阅,在使用的过程中加深理解再来完善笔记
 
@@ -240,7 +257,7 @@ redis虽然是内存数据库,但也提供了持久化方案
     # appendfsync always
     appendfsync everysec
     # appendfsync no
-记录命令文本到日志中,粒度要小写,但是频繁的同步到磁盘效率也很低, 可以理解为mysql的binlog
+记录命令文本到日志中,粒度要小写,但是频繁的同步到磁盘效率也很低, 可以理解为mysql的binlog, sync_binlog=1
 
 在mongodb中开启journal日志,没说最性能有很大影响,磁盘是顺序写的.但是redis这里说影响很大,说明redis对响应要求很高
 

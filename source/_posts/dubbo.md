@@ -1,5 +1,7 @@
 #dubbo
 
+## 启动流程
+
 ## 线程模型
 dubbo Container就如同游戏服务器,玩家每次请求如同customer rpc调用,container(游戏服务器)需要根据  
 请求参数(玩家使用道具)来执行具体逻辑.  
