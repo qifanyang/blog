@@ -1,5 +1,28 @@
 #dubbo
 
+## 1
+  client方法调用,使用动态代理可以将方法调用转换成为Invocation事件,该Invocation包含方法调用  
+信息,接口/类+方法+参数, 序列化传输,服务端反序列化为Invocation,可以理解为发送了一个消息  
+
+  服务端使用<dubbo:service/>定义服务,该spring自定义标签,解析时注册ServiceBean(单利,非延迟)  
+实现了InitializingBean.在afterPropertiesSet()中,根据<dubbo:service>中的接口和ref创建  
+代理包装为对象Invoker, Exporter,然后统一放在AbstractProtocol中的exporterMap中,  
+key = port, serviceName, serviceVersion, serviceGroup 
+当server端收到调用,根据Invocation查询到对应Invoker,然后执行方法调用  
+
+server端 Exchanger, HeaderExchanger, ExchangeServer, Transporter, NettyTransporter
+HeaderExchanger的bind方法 包装Transporters 创建具有网络功能的ExchangeServer,包装nettyServer    
+有点同rabbitMq的概念, exchange接受mq,然后路由都queue, 
+dubbo使用Protocol代表通讯相关内容,在dubboProtocol中有serverMap,可以启动多个端口,key=ip+port  
+当nettyTransport收到请求,反序列化后交给requestHandler,查找对应exporterMap中的invoker
+方法调用注意filter chain
+
+return ExtensionLoader.getExtensionLoader(Transporter.class).getAdaptiveExtension()  
+
+## dubbo:reference
+ExtensionLoader.getExtensionLoader(Cluster.class).getAdaptiveExtension(); 扩展加载机制
+
+
 ## 启动流程
 
 ## 线程模型
